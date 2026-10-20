@@ -174,6 +174,7 @@ public class SGSimpleSettings {
         case tabBarSearchEnabled
         case hideStories
         case warnOnStoriesOpen
+        case powerSavingFollowsSystem
         case showProfileId
         case sendWithReturnKey
     }
@@ -327,6 +328,7 @@ public class SGSimpleSettings {
         Keys.tabBarSearchEnabled.rawValue: true,
         Keys.hideStories.rawValue: false,
         Keys.warnOnStoriesOpen.rawValue: false,
+        Keys.powerSavingFollowsSystem.rawValue: true,
         Keys.showProfileId.rawValue: true,
         Keys.sendWithReturnKey.rawValue: false
     ]
@@ -385,6 +387,9 @@ public class SGSimpleSettings {
 
     @UserDefault(key: Keys.warnOnStoriesOpen.rawValue)
     public var warnOnStoriesOpen: Bool
+
+    @UserDefault(key: Keys.powerSavingFollowsSystem.rawValue)
+    public var powerSavingFollowsSystem: Bool
     
     @UserDefault(key: Keys.storyStealthMode.rawValue)
     public var storyStealthMode: Bool

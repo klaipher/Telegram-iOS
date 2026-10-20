@@ -40,6 +40,8 @@
 
 "Settings.Stories.Hide" = "Hide Stories";
 "Settings.Stories.WarnBeforeView" = "Ask Before Viewing";
+"Settings.PowerSaving.FollowSystem" = "Power Saving in Low Power Mode";
+"Settings.PowerSaving.FollowSystem.Notice" = "Turns Telegram's Power Saving on while iOS Low Power Mode is enabled or the device is overheating, regardless of the battery threshold.";
 "Settings.Stories.DisableSwipeToRecord" = "Disable Swipe to Record";
 
 "Settings.Translation.QuickTranslateButton" = "Quick Translate button";

@@ -2172,9 +2172,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             self.preloadStorySubscriptionsDisposable = (combineLatest(queue: .mainQueue(),
                 self.context.engine.messages.preloadStorySubscriptions(isHidden: self.location == .chatList(groupId: .archive), preferHighQuality: preferHighQualityStories),
                 self.context.sharedContext.automaticMediaDownloadSettings,
-                automaticDownloadNetworkType
+                automaticDownloadNetworkType,
+                sgSimpleSettingsBoolSignal(.hideStories, defaultValue: false) // MARK: Swiftgram
             )
-            |> deliverOnMainQueue).startStrict(next: { [weak self] resources, automaticMediaDownloadSettings, automaticDownloadNetworkType in
+            |> deliverOnMainQueue).startStrict(next: { [weak self] resources, automaticMediaDownloadSettings, automaticDownloadNetworkType, hideStories in
                 guard let self else {
                     return
                 }
@@ -2185,7 +2186,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
                 
                 var resources = resources
-                if !autodownloadEnabled {
+                if !autodownloadEnabled || hideStories { // MARK: Swiftgram: hidden stories are not preloaded
                     resources.removeAll()
                 }
                 

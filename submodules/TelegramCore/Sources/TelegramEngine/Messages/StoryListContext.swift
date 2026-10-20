@@ -3,6 +3,7 @@ import Postbox
 import TelegramApi
 import SwiftSignalKit
 import MtProtoKit
+import SGSimpleSettings
 
 enum InternalStoryUpdate {
     case deleted(peerId: PeerId, id: Int32)
@@ -532,8 +533,11 @@ public final class StorySubscriptionsContext {
                     self.isLoading = false
                     if isRefresh {
                         self.taskState.isRefreshScheduled = false
+                        // MARK: Swiftgram: with "Hide Stories" on, the list is never shown, so refresh it
+                        // every 10 minutes instead of every minute (the next tick picks up a toggle).
+                        let refreshDelay: Double = SGSimpleSettings.shared.hideStories ? 600.0 : 60.0
                         self.refreshTimerDisposable.set((Signal<Never, NoError>.complete()
-                        |> suspendAwareDelay(60.0, queue: self.queue)).start(completed: { [weak self] in
+                        |> suspendAwareDelay(refreshDelay, queue: self.queue)).start(completed: { [weak self] in
                             guard let `self` = self else {
                                 return
                             }

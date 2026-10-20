@@ -679,6 +679,7 @@ final class StarsTransactionsScreenComponent: Component {
             
             let withdrawAvailable = (self.revenueState?.balances.overallRevenue.amount.value ?? 0) > 0
             let tonWithdrawAvailable = (self.revenueState?.balances.availableBalance.amount ?? StarsAmount.zero) > StarsAmount.zero
+            let _ = tonWithdrawAvailable // MARK: Swiftgram: withdraw action disabled below
              
             if component.starsContext.ton {
                 let proceedsSize = self.proceedsView.update(

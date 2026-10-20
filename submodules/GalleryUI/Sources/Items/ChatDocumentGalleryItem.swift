@@ -113,8 +113,6 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
     
     init(context: AccountContext, presentationData: PresentationData) {
         //if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
-            let preferences = WKPreferences()
-            preferences.javaScriptEnabled = false
             let configuration = WKWebViewConfiguration()
             configuration.defaultWebpagePreferences.allowsContentJavaScript = false
             let webView = WKWebView(frame: CGRect(), configuration: configuration)

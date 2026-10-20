@@ -1013,7 +1013,7 @@ public final class AccountContextImpl: AccountContext {
     
     public func requestCall(peerId: PeerId, isVideo: Bool, completion: @escaping () -> Void) {
         // MARK: Swiftgram
-        let makeCall = {
+        let makeCall = { [self] in
         guard let callResult = self.sharedContext.callManager?.requestCall(context: self, peerId: peerId, isVideo: isVideo, endCurrentIfAny: false) else {
             return
         }

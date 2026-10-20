@@ -3678,11 +3678,18 @@ extension AppDelegate {
         // MARK: Swiftgram: this used to force `network.shouldKeepConnection` to `true` for the rest of
         // the process (the revert below never ran), which replaced the Account's binding to
         // `shouldBeMaster` and kept MTProto from pausing whenever the app ran in the background.
-        // The status query runs right after launch in the foreground, where the connection is up anyway.
+        // The primary (Pro) account may not be the active one, so mark its UI as in use for the
+        // duration of the query: that drives the account's shouldBeMaster the regular way, and the
+        // timeout keeps the Task from waiting forever when the network is paused.
+        let userInterfaceInUse = primaryContext.sharedContext.setAccountUserInterfaceInUse(primaryContext.account.id)
+        defer {
+            userInterfaceInUse.dispose()
+        }
         // MARK: Swiftgram
         let sgIqtpQueryString = makeIqtpQuery("s")
         //
-        let iqtpResponse = try? await sgIqtpQuery(engine: primaryContext.engine, query: sgIqtpQueryString).awaitable()
+        let iqtpResponse = try? await (sgIqtpQuery(engine: primaryContext.engine, query: sgIqtpQueryString)
+        |> timeout(30.0, queue: Queue.mainQueue(), alternate: .single(nil))).awaitable()
         guard let iqtpResponse = iqtpResponse else {
             SGLogger.shared.log("SGIAP", "IQTP response is nil!")
             DispatchQueue.main.async {

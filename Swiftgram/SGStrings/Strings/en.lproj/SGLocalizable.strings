@@ -41,6 +41,8 @@
 "Settings.Stories.Hide" = "Hide Stories";
 "Settings.Stories.WarnBeforeView" = "Ask Before Viewing";
 "Settings.PowerSaving.FollowSystem" = "Power Saving in Low Power Mode";
+"PowerSaving.LowPowerModeText" = "Low Power Mode is on";
+"PowerSaving.ForcedBySystem.Footer" = "Low Power Mode is on or the device is hot, so Power Saving is active regardless of this setting. You can turn that off in Swiftgram settings.";
 "Settings.PowerSaving.FollowSystem.Notice" = "Turns Telegram's Power Saving on while iOS Low Power Mode is enabled or the device is overheating, regardless of the battery threshold.";
 "Settings.Stories.DisableSwipeToRecord" = "Disable Swipe to Record";
 

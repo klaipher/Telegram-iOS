@@ -134,6 +134,7 @@ public final class AppLockContextImpl: AppLockContext {
     
     private var lastActiveTimestamp: Double?
     private var lastActiveValue: Bool = false
+    private var lastIsLockable: Bool = false // MARK: Swiftgram
     private var biometricAuthenticationState = AppLockBiometricAuthenticationState()
     private var suppressAutomaticBiometrics = false
     
@@ -170,6 +171,21 @@ public final class AppLockContextImpl: AppLockContext {
             strongSelf.biometricAuthenticationState.update(isApplicationActive: isApplicationActive, isApplicationInForeground: isApplicationInForeground)
             
             let passcodeSettings: PresentationPasscodeSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.presentationPasscodeSettings]?.get(PresentationPasscodeSettings.self) ?? .defaultSettings
+            
+            // MARK: Swiftgram: the activity timestamp is only renewed while a passcode is set (see
+            // updateTimestampRenewTimer), so when a passcode is created the persisted value may be
+            // missing or hours old and isLocked() would lock the app immediately. Stamp "now" on the
+            // transition, in memory for this pass and on disk through the regular path.
+            var state = state
+            let isLockable = accessChallengeData.data.isLockable
+            if isLockable && !strongSelf.lastIsLockable && isApplicationActive {
+                var bootTimestamp: Int32 = 0
+                let uptime = getDeviceUptimeSeconds(&bootTimestamp)
+                state.applicationActivityTimestamp = MonotonicTimestamp(bootTimestamp: bootTimestamp, uptime: uptime)
+                strongSelf.currentStateValue = state
+                strongSelf.updateApplicationActivityTimestamp()
+            }
+            strongSelf.lastIsLockable = isLockable
 
             if !isApplicationInForeground {
                 strongSelf.suppressAutomaticBiometrics = false
@@ -277,7 +293,7 @@ public final class AppLockContextImpl: AppLockContext {
             
             // MARK: Swiftgram: the activity timestamp only matters for auto-lock, so only renew it (an
             // atomic JSON write with fsync on every tick) while a passcode is actually set.
-            strongSelf.updateTimestampRenewTimer(shouldRun: isApplicationActive && !isCurrentlyLocked && accessChallengeData.data.isLockable)
+            strongSelf.updateTimestampRenewTimer(shouldRun: isApplicationActive && !isCurrentlyLocked && isLockable)
             strongSelf.lockStatus.update(isPasscodeLocked: isCurrentlyLocked, isApplicationActive: isApplicationActive, isApplicationInForeground: isApplicationInForeground)
             
             if shouldDisplayCoveringView {

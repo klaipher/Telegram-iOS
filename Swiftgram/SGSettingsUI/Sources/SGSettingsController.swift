@@ -54,6 +54,7 @@ private enum SGBoolSetting: String {
     case foldersAtBottom
     case startTelescopeWithRearCam
     case hideStories
+    case powerSavingFollowsSystem
     case uploadSpeedBoost
     case showProfileId
     case warnOnStoriesOpen
@@ -309,6 +310,8 @@ private func SGControllerEntries(presentationData: PresentationData, callListSet
     entries.append(.notice(id: id.count, section: .other, text: i18n("Settings.swipeForVideoPIP.Notice", lang)))
     entries.append(.toggle(id: id.count, section: .other, settingName: .hideChannelBottomButton, value: !SGSimpleSettings.shared.hideChannelBottomButton, text: i18n("Settings.showChannelBottomButton", lang), enabled: true))
     entries.append(.toggle(id: id.count, section: .other, settingName: .wideChannelPosts, value: SGSimpleSettings.shared.wideChannelPosts, text: i18n("Settings.wideChannelPosts", lang), enabled: true))
+    entries.append(.toggle(id: id.count, section: .other, settingName: .powerSavingFollowsSystem, value: SGSimpleSettings.shared.powerSavingFollowsSystem, text: i18n("Settings.PowerSaving.FollowSystem", lang), enabled: true))
+    entries.append(.notice(id: id.count, section: .other, text: i18n("Settings.PowerSaving.FollowSystem.Notice", lang)))
     entries.append(.toggle(id: id.count, section: .other, settingName: .secondsInMessages, value: SGSimpleSettings.shared.secondsInMessages, text: i18n("Settings.secondsInMessages", lang), enabled: true))
     entries.append(.toggle(id: id.count, section: .other, settingName: .messageDoubleTapActionOutgoingEdit, value: SGSimpleSettings.shared.messageDoubleTapActionOutgoing == SGSimpleSettings.MessageDoubleTapAction.edit.rawValue, text: i18n("Settings.messageDoubleTapActionOutgoingEdit", lang), enabled: true))
     entries.append(.toggle(id: id.count, section: .other, settingName: .hideRecordingButton, value: !SGSimpleSettings.shared.hideRecordingButton, text: i18n("Settings.RecordingButton", lang), enabled: true))
@@ -400,6 +403,8 @@ public func sgSettingsController(context: AccountContext/*, focusOnItemTag: Int?
             SGSimpleSettings.shared.startTelescopeWithRearCam = value
         case .hideStories:
             SGSimpleSettings.shared.hideStories = value
+        case .powerSavingFollowsSystem:
+            SGSimpleSettings.shared.powerSavingFollowsSystem = value
         case .showProfileId:
             SGSimpleSettings.shared.showProfileId = value
         case .warnOnStoriesOpen:

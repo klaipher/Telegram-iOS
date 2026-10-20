@@ -1191,7 +1191,9 @@ public final class PresentationCallImpl: PresentationCall {
                                             timer.start()
                                             
                                             return ActionDisposable {
-                                                device.isBatteryMonitoringEnabled = false
+                                                // MARK: Swiftgram: do not disable battery monitoring here. The app enables it at
+                                                // launch and automatic Power Saving relies on batteryLevelDidChangeNotification;
+                                                // turning it off after a call silently broke that until the next launch.
                                                 timer.invalidate()
                                             }
                                         }
@@ -1265,7 +1267,7 @@ public final class PresentationCallImpl: PresentationCall {
                                     timer.start()
                                     
                                     return ActionDisposable {
-                                        device.isBatteryMonitoringEnabled = false
+                                        // MARK: Swiftgram: see above, keep battery monitoring enabled
                                         timer.invalidate()
                                     }
                                 }

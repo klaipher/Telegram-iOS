@@ -1,4 +1,5 @@
 import SGSimpleSettings
+import SGStrings
 import Foundation
 import UIKit
 import Postbox
@@ -8309,18 +8310,33 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 
                 if isPowerSavingEnabled != previousValueValue && previousValueValue != nil && isPowerSavingEnabled {
                     let batteryLevel = UIDevice.current.batteryLevel
-                    if batteryLevel > 0.0 && self.view.window != nil {
+                    // MARK: Swiftgram: Power Saving can now be switched on by the system. Thermal
+                    // pressure flaps and cannot be changed from here, so it shows no toast; Low Power
+                    // Mode gets its own text, and "Disable" then opts out of following the system.
+                    let systemReason = powerSavingSystemReason()
+                    if systemReason == .thermal {
+                    } else if batteryLevel > 0.0 && self.view.window != nil {
                         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
                         let batteryPercentage = Int(batteryLevel * 100.0)
+                        let text: String
+                        if systemReason == .lowPowerMode {
+                            text = "PowerSaving.LowPowerModeText".i18n(presentationData.strings.baseLanguageCode)
+                        } else {
+                            text = presentationData.strings.PowerSaving_AlertEnabledText("\(batteryPercentage)").string
+                        }
                         
                         self.dismissAllUndoControllers()
-                        self.present(UndoOverlayController(presentationData: presentationData, content: .universal(animation: "lowbattery_30", scale: 1.0, colors: [:], title: presentationData.strings.PowerSaving_AlertEnabledTitle, text: presentationData.strings.PowerSaving_AlertEnabledText("\(batteryPercentage)").string, customUndoText: presentationData.strings.PowerSaving_AlertEnabledAction, timeout: 5.0), elevatedLayout: false, action: { [weak self] action in
+                        self.present(UndoOverlayController(presentationData: presentationData, content: .universal(animation: "lowbattery_30", scale: 1.0, colors: [:], title: presentationData.strings.PowerSaving_AlertEnabledTitle, text: text, customUndoText: presentationData.strings.PowerSaving_AlertEnabledAction, timeout: 5.0), elevatedLayout: false, action: { [weak self] action in
                             if case .undo = action, let self {
-                                let _ = updateMediaDownloadSettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
-                                    var settings = settings
-                                    settings.energyUsageSettings.activationThreshold = 4
-                                    return settings
-                                }).startStandalone()
+                                if systemReason == .lowPowerMode {
+                                    SGSimpleSettings.shared.powerSavingFollowsSystem = false
+                                } else {
+                                    let _ = updateMediaDownloadSettingsInteractively(accountManager: self.context.sharedContext.accountManager, { settings in
+                                        var settings = settings
+                                        settings.energyUsageSettings.activationThreshold = 4
+                                        return settings
+                                    }).startStandalone()
+                                }
                             }
                             return false
                         }), in: .current)

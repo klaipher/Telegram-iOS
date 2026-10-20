@@ -394,14 +394,23 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
         })
         
         let enablePreload = context.sharedContext.accountManager.sharedData(keys: Set([ApplicationSpecificSharedDataKeys.automaticMediaDownloadSettings]))
-        |> map { sharedData -> Bool in
+        |> mapToSignal { sharedData -> Signal<Bool, NoError> in
             var automaticMediaDownloadSettings: MediaAutoDownloadSettings
             if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.automaticMediaDownloadSettings]?.get(MediaAutoDownloadSettings.self) {
                 automaticMediaDownloadSettings = value
             } else {
                 automaticMediaDownloadSettings = MediaAutoDownloadSettings.defaultSettings
             }
-            return automaticMediaDownloadSettings.energyUsageSettings.autodownloadInBackground
+            // MARK: Swiftgram: read the effective value. With automatic Power Saving active the
+            // stored flag still said "on" while the settings UI showed preload as off.
+            return automaticEnergyUsageShouldBeOn(settings: automaticMediaDownloadSettings)
+            |> map { powerSavingIsOn -> Bool in
+                if powerSavingIsOn {
+                    return EnergyUsageSettings.powerSavingDefault.autodownloadInBackground
+                } else {
+                    return automaticMediaDownloadSettings.energyUsageSettings.autodownloadInBackground
+                }
+            }
         }
         |> distinctUntilChanged
         

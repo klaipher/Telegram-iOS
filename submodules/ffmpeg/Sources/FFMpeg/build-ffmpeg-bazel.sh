@@ -1,4 +1,5 @@
 #!/bin/bash
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 
 set -x
 

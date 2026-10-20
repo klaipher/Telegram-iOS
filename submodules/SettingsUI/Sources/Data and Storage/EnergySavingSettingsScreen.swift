@@ -9,6 +9,7 @@ import ItemListUI
 import PresentationDataUtils
 import AccountContext
 import UndoUI
+import SGStrings
 
 public enum EnergySavingItemType: CaseIterable {
     case autoplayVideo
@@ -216,7 +217,8 @@ private enum EnergeSavingSettingsScreenEntry: ItemListNodeEntry {
 
 private func energeSavingSettingsScreenEntries(
     presentationData: PresentationData,
-    settings: MediaAutoDownloadSettings
+    settings: MediaAutoDownloadSettings,
+    systemReason: PowerSavingSystemReason? // MARK: Swiftgram
 ) -> [EnergeSavingSettingsScreenEntry] {
     var entries: [EnergeSavingSettingsScreenEntry] = []
     
@@ -231,7 +233,7 @@ private func energeSavingSettingsScreenEntries(
     entries.append(.allHeader(allIsOn))
     entries.append(.all(settings.energyUsageSettings.activationThreshold))
     
-    let allText: String
+    var allText: String
     if settings.energyUsageSettings.activationThreshold <= 4 {
         allText = presentationData.strings.PowerSaving_AllDescriptionNever
     } else if settings.energyUsageSettings.activationThreshold >= 96 {
@@ -239,10 +241,15 @@ private func energeSavingSettingsScreenEntries(
     } else {
         allText = presentationData.strings.PowerSaving_AllDescriptionLimit("\(settings.energyUsageSettings.activationThreshold)").string
     }
+    if systemReason != nil { // MARK: Swiftgram
+        allText += "\n\n" + "PowerSaving.ForcedBySystem.Footer".i18n(presentationData.strings.baseLanguageCode)
+    }
     entries.append(.allFooter(allText))
     
     let itemsEnabled: Bool
-    if settings.energyUsageSettings.activationThreshold <= 4 {
+    if systemReason != nil { // MARK: Swiftgram: every item is forced off while the system asks for saving
+        itemsEnabled = false
+    } else if settings.energyUsageSettings.activationThreshold <= 4 {
         itemsEnabled = true
     } else if settings.energyUsageSettings.activationThreshold >= 96 {
         itemsEnabled = false
@@ -294,9 +301,10 @@ public func energySavingSettingsScreen(context: AccountContext, focusOnItemTag: 
     
     let signal = combineLatest(
         context.sharedContext.presentationData,
-        context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.automaticMediaDownloadSettings]))
+        context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.automaticMediaDownloadSettings]),
+        powerSavingSystemReasonSignal()) // MARK: Swiftgram
         |> deliverOnMainQueue
-        |> map { presentationData, sharedData -> (ItemListControllerState, (ItemListNodeState, Any)) in
+        |> map { presentationData, sharedData, systemReason -> (ItemListControllerState, (ItemListNodeState, Any)) in
             var automaticMediaDownloadSettings: MediaAutoDownloadSettings
             if let value = sharedData.entries[ApplicationSpecificSharedDataKeys.automaticMediaDownloadSettings]?.get(MediaAutoDownloadSettings.self) {
                 automaticMediaDownloadSettings = value
@@ -312,7 +320,7 @@ public func energySavingSettingsScreen(context: AccountContext, focusOnItemTag: 
                 backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back),
                 animateChanges: false
             )
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: energeSavingSettingsScreenEntries(presentationData: presentationData, settings: automaticMediaDownloadSettings), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: true)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: energeSavingSettingsScreenEntries(presentationData: presentationData, settings: automaticMediaDownloadSettings, systemReason: systemReason), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: true)
             
             return (controllerState, (listState, arguments))
     }

@@ -9,6 +9,7 @@ import TelegramUIPreferences
 import AppBundle
 import Sunrise
 import PresentationStrings
+import SGSimpleSettings
 
 public struct PresentationDateTimeFormat: Equatable {
     public let timeFormat: PresentationTimeFormat
@@ -530,7 +531,65 @@ private func automaticThemeShouldSwitch(_ settings: AutomaticThemeSwitchSetting,
     }
 }
 
+// MARK: Swiftgram
+/// iOS asks apps to reduce work in Low Power Mode and under thermal pressure
+/// (Energy Efficiency Guide: "respond to Low Power Mode", `ProcessInfo.thermalState`).
+/// Treat both as a request to switch the app's Power Saving on, unless the user opted out.
+public enum PowerSavingSystemReason: Equatable {
+    case lowPowerMode
+    case thermal
+}
+
+public func powerSavingSystemReason() -> PowerSavingSystemReason? {
+    guard SGSimpleSettings.shared.powerSavingFollowsSystem else {
+        return nil
+    }
+    let processInfo = ProcessInfo.processInfo
+    if processInfo.isLowPowerModeEnabled {
+        return .lowPowerMode
+    }
+    switch processInfo.thermalState {
+    case .serious, .critical:
+        return .thermal
+    default:
+        return nil
+    }
+}
+
+private func systemRequestsEnergySaving() -> Bool {
+    return powerSavingSystemReason() != nil
+}
+
+private let powerSavingSystemNotificationNames: [Notification.Name] = [
+    .NSProcessInfoPowerStateDidChange,
+    ProcessInfo.thermalStateDidChangeNotification,
+    UserDefaults.didChangeNotification // the Swiftgram opt-out toggle
+]
+
+/// Emits the current system reason for Power Saving and every change of it.
+public func powerSavingSystemReasonSignal() -> Signal<PowerSavingSystemReason?, NoError> {
+    return Signal { subscriber in
+        subscriber.putNext(powerSavingSystemReason())
+        var observers: [NSObjectProtocol] = []
+        for name in powerSavingSystemNotificationNames {
+            observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: OperationQueue.main, using: { _ in
+                subscriber.putNext(powerSavingSystemReason())
+            }))
+        }
+        return ActionDisposable {
+            for observer in observers {
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
+    }
+    |> runOn(Queue.mainQueue())
+    |> distinctUntilChanged
+}
+
 public func automaticEnergyUsageShouldBeOnNow(settings: MediaAutoDownloadSettings) -> Bool {
+    if systemRequestsEnergySaving() { // MARK: Swiftgram
+        return true
+    }
     if settings.energyUsageSettings.activationThreshold <= 4 {
         return false
     } else if settings.energyUsageSettings.activationThreshold >= 96 {
@@ -546,20 +605,30 @@ public func automaticEnergyUsageShouldBeOnNow(settings: MediaAutoDownloadSetting
 }
 
 public func automaticEnergyUsageShouldBeOn(settings: MediaAutoDownloadSettings) -> Signal<Bool, NoError> {
-    if settings.energyUsageSettings.activationThreshold <= 4 {
-        return .single(false)
-    } else if settings.energyUsageSettings.activationThreshold >= 96 {
+    if settings.energyUsageSettings.activationThreshold >= 96 {
         return .single(true)
     } else {
+        // MARK: Swiftgram: also re-evaluate on Low Power Mode and thermal state changes; below the
+        // "never" threshold only those two system signals can turn Power Saving on.
+        let observesBattery = settings.energyUsageSettings.activationThreshold > 4
         return Signal { subscriber in
             subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
             
-            let observer = NotificationCenter.default.addObserver(forName: UIDevice.batteryLevelDidChangeNotification, object: nil, queue: OperationQueue.main, using: { _ in
-                subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
-            })
+            var observers: [NSObjectProtocol] = []
+            var names: [Notification.Name] = powerSavingSystemNotificationNames
+            if observesBattery {
+                names.append(UIDevice.batteryLevelDidChangeNotification)
+            }
+            for name in names {
+                observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: OperationQueue.main, using: { _ in
+                    subscriber.putNext(automaticEnergyUsageShouldBeOnNow(settings: settings))
+                }))
+            }
             
             return ActionDisposable {
-                NotificationCenter.default.removeObserver(observer)
+                for observer in observers {
+                    NotificationCenter.default.removeObserver(observer)
+                }
             }
         }
         |> runOn(Queue.mainQueue())

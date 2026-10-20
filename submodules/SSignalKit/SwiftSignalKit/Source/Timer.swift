@@ -41,12 +41,17 @@ public final class Timer {
             return timer
         }
         
+        // MARK: Swiftgram: give every timer a small leeway (10 % of its period, capped) so the
+        // kernel can coalesce wakeups instead of firing each timer at its own exact instant.
+        // Repeating timers may drift by up to 1 s per tick; one-shot timers are often deadlines
+        // (media end, animation steps), so they get at most 20 ms.
+        let leewayMilliseconds = Int(max(1.0, min(self.`repeat` ? 1000.0 : 20.0, self.timeout * 100.0)))
         if self.`repeat` {
             let time: DispatchTime = DispatchTime.now() + self.timeout
-            timer.schedule(deadline: time, repeating: self.timeout)
+            timer.schedule(deadline: time, repeating: self.timeout, leeway: .milliseconds(leewayMilliseconds))
         } else {
             let time: DispatchTime = DispatchTime.now() + self.timeout
-            timer.schedule(deadline: time)
+            timer.schedule(deadline: time, leeway: .milliseconds(leewayMilliseconds))
         }
         
         timer.resume()

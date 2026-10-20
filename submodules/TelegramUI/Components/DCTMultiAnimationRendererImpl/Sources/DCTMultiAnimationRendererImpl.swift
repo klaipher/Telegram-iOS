@@ -913,6 +913,7 @@ public final class DCTMultiAnimationRendererImpl: MultiAnimationRenderer {
                             }
                             strongSelf.animationTick(frameInterval: frameInterval)
                         }, selector: #selector(TimerTarget.timerEvent), userInfo: nil, repeats: true)
+                        displayTimer.tolerance = frameInterval * 0.1 // MARK: Swiftgram: let the run loop coalesce frame ticks
                         self.displayTimer = displayTimer
                         RunLoop.main.add(displayTimer, forMode: .common)
                     }

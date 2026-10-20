@@ -275,7 +275,9 @@ public final class AppLockContextImpl: AppLockContext {
                 }
             }
             
-            strongSelf.updateTimestampRenewTimer(shouldRun: isApplicationActive && !isCurrentlyLocked)
+            // MARK: Swiftgram: the activity timestamp only matters for auto-lock, so only renew it (an
+            // atomic JSON write with fsync on every tick) while a passcode is actually set.
+            strongSelf.updateTimestampRenewTimer(shouldRun: isApplicationActive && !isCurrentlyLocked && accessChallengeData.data.isLockable)
             strongSelf.lockStatus.update(isPasscodeLocked: isCurrentlyLocked, isApplicationActive: isApplicationActive, isApplicationInForeground: isApplicationInForeground)
             
             if shouldDisplayCoveringView {
@@ -335,7 +337,7 @@ public final class AppLockContextImpl: AppLockContext {
     private func updateTimestampRenewTimer(shouldRun: Bool) {
         if shouldRun {
             if self.timestampRenewTimer == nil { // MARK: Swiftgram
-                let timestampRenewTimer = SwiftSignalKit.Timer(timeout: 2.5, repeat: true, completion: { [weak self] in
+                let timestampRenewTimer = SwiftSignalKit.Timer(timeout: 5.0, repeat: true, completion: { [weak self] in
                     guard let strongSelf = self else {
                         return
                     }

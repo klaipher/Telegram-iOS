@@ -3672,29 +3672,19 @@ extension AppDelegate {
     }
     
     func fetchSGStatus(primaryContext: AccountContext) async {
-        // TODO(swiftgram): Stuck on getting shouldKeepConnection
-        // Perhaps, we can drop on some timeout?
-//        let currentShouldKeepConnection = await (primaryContext.account.network.shouldKeepConnection.get() |> take(1) |> deliverOnMainQueue).awaitable()
         guard !primaryContext.account.testingEnvironment else {
             return
         }
-        let currentShouldKeepConnection = false
-        let userId = primaryContext.account.peerId.id._internalGetInt64Value()
-//        SGLogger.shared.log("SGIAP", "User id \(userId) currently keeps connection: \(currentShouldKeepConnection)")
-        if !currentShouldKeepConnection {
-            SGLogger.shared.log("SGIAP", "Asking user id \(userId) to keep connection: true")
-            primaryContext.account.network.shouldKeepConnection.set(.single(true))
-        }
+        // MARK: Swiftgram: this used to force `network.shouldKeepConnection` to `true` for the rest of
+        // the process (the revert below never ran), which replaced the Account's binding to
+        // `shouldBeMaster` and kept MTProto from pausing whenever the app ran in the background.
+        // The status query runs right after launch in the foreground, where the connection is up anyway.
         // MARK: Swiftgram
         let sgIqtpQueryString = makeIqtpQuery("s")
         //
         let iqtpResponse = try? await sgIqtpQuery(engine: primaryContext.engine, query: sgIqtpQueryString).awaitable()
         guard let iqtpResponse = iqtpResponse else {
             SGLogger.shared.log("SGIAP", "IQTP response is nil!")
-//            if !currentShouldKeepConnection {
-//                SGLogger.shared.log("SGIAP", "Setting user id \(userId) keep connection back to false")
-//                primaryContext.account.network.shouldKeepConnection.set(.single(false))
-//            }
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .SGIAPHelperValidationErrorNotification, object: nil, userInfo: ["error": "PayWall.ValidationError.TryAgain"])
             }
@@ -3738,10 +3728,5 @@ extension AppDelegate {
             }
             return value
         }).awaitable()
-
-//        if !currentShouldKeepConnection {
-//            SGLogger.shared.log("SGIAP", "Setting user id \(userId) keep connection back to false")
-//            primaryContext.account.network.shouldKeepConnection.set(.single(false))
-//        }
     }
 }

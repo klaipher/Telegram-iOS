@@ -116,7 +116,7 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
             let preferences = WKPreferences()
             preferences.javaScriptEnabled = false
             let configuration = WKWebViewConfiguration()
-            configuration.preferences = preferences
+            configuration.defaultWebpagePreferences.allowsContentJavaScript = false
             let webView = WKWebView(frame: CGRect(), configuration: configuration)
             webView.allowsLinkPreview = false
             webView.allowsBackForwardNavigationGestures = false
